@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dcl.dao.UserDao">
+    <cache></cache>
+
+    <!--void addUser(User user);-->
+    <insert id="addUser" >
+        insert into user(username,birthday,sex,address) values(#{username},#{birthday},#{sex},#{address})
+    </insert>
+
+    <!--void deleteById(Integer id);-->
+    <delete id="deleteById">
+        delete from user where id=#{id}
+    </delete>
+
+    <!-- void update(User user);-->
+    <update id="update">
+        update user set username=#{username},birthday=#{birthday},sex=#{sex},address=#{address} where id=#{id}
+    </update>
+
+    <!--User getUserById(Integer id);-->
+    <select id="getUserById" resultType="com.dcl.model.User">
+    select * from user where id = #{id}
+    </select>
+
+    <!--List<User> getAll();-->
+    <select id="getAll" resultType="com.dcl.model.User">
+        select * from user
+    </select>
+</mapper>

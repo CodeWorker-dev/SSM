@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--除了控制器不扫描，其他业务组件都需要扫描，包括dao，service【要使用默认排除规则】-->
+    <context:component-scan base-package="com.dcl">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"></context:exclude-filter>
+    </context:component-scan>
+
+    <!--加载外部配置文件-->
+    <context:property-placeholder location="classpath:dbconfig.properties"></context:property-placeholder>
+
+    <!--配置数据源【c3p0数据库连接池】-->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="${jdbc.driverName}"></property>
+        <property name="jdbcUrl" value="${jdbc.url}"></property>
+        <property name="user" value="${jdbc.user}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+        <property name="minPoolSize" value="${minPoolSize}"></property>
+        <property name="maxPoolSize" value="${maxPoolSize}"></property>
+    </bean>
+
+
+
+    <!--jdbcTemplate操作数据库-->
+    <!--<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">-->
+        <!--<property name="dataSource" ref="dataSource"></property>-->
+    <!--</bean>-->
+
+    <!--***************************************整合MyBatis的关键配置*****************************************-->
+    <!--配置MyBatis操作数据库-->
+    <!--根据配置文件获得sqlSessionFactory对象-->
+    <bean id="sessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--指定mybatis全局配置文件的位置-->
+        <property name="configLocation" value="classpath:mybatis/mybatis-config.xml"></property>
+        <!--指定MyBatis使用的数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+        <!--指定sql映射文件位置-->
+        <property name="mapperLocations" value="classpath:mybatis/mapper/*.xml"></property>
+    </bean>
+
+    <!--将每一个dao接口的实现（mybatis给dao的代理对象）加入到IOC容器中-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--指明接口包的位置-->
+        <property name="basePackage" value="com.dcl.dao"></property>
+    </bean>
+    <!--***************************************整合MyBatis的关键配置*****************************************-->
+
+    <!--配置事务管理器,让事务管理器控制数据源中的连接提交和关闭-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--配置事务通知-->
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <!--配置事务属性-->
+        <tx:attributes>
+            <!--配置所有方法发生异常都回滚-->
+            <tx:method name="*" />
+            <!--配置查询方法只读-->
+            <tx:method name="get*" read-only="true"></tx:method>
+        </tx:attributes>
+    </tx:advice>
+
+    <!--基于xml配置，配置事务：哪些方法切入事务还要写切入点表达式-->
+    <aop:config>
+        <!--配置切入点表达式-->
+        <aop:pointcut id="txPoint" expression="execution(* com.dcl.service.*.*(..))"></aop:pointcut>
+        <aop:advisor advice-ref="txAdvice"  pointcut-ref="txPoint"></aop:advisor>
+    </aop:config>
+
+
+</beans>
